@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 프롬프트 허브</title>
+<script src="prompt-data.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #F7F8FA; color: #1F2937; }
+
+/* Layout */
+.app { display: flex; height: 100vh; }
+.sidebar { width: 240px; background: #fff; border-right: 1px solid #E5E7EB; display: flex; flex-direction: column; flex-shrink: 0; }
+.main { flex: 1; overflow: auto; }
+
+/* Sidebar */
+.sidebar-logo { padding: 20px 16px; border-bottom: 1px solid #E5E7EB; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.logo-img-wrap { width: 100%; display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #4F46E5, #7C3AED); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.logo-icon img { width: 100%; height: 100%; object-fit: contain; }
+.logo-img-full { max-width: 100%; max-height: 44px; object-fit: contain; display: block; }
+.logo-text-main { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.logo-text-sub { font-size: 11px; color: #6B7280; }
+.sidebar nav { padding: 12px 10px; flex: 1; }
+.nav-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 4px; font-size: 13px; background: transparent; color: #6B7280; font-weight: 400; transition: all 0.15s; font-family: inherit; text-align: left; line-height: 1.3; }
+.nav-btn.active { background: #EEF2FF; color: #4F46E5; font-weight: 600; }
+.nav-btn .count { font-size: 11px; border-radius: 10px; padding: 2px 8px; font-weight: 600; margin-left: auto; background: #E5E7EB; color: #6B7280; }
+.nav-btn.active .count { background: #4F46E5; color: #fff; }
+.sidebar-footer { padding: 16px 20px; border-top: 1px solid #E5E7EB; font-size: 11px; color: #6B7280; }
+
+/* Header */
+.header { background: #fff; border-bottom: 1px solid #E5E7EB; padding: 16px 32px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; }
+.search-wrap { flex: 1; position: relative; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6B7280; pointer-events: none; }
+.search-input { width: 100%; max-width: 480px; padding: 9px 12px 9px 38px; border-radius: 8px; border: 1px solid #E5E7EB; font-size: 14px; outline: none; background: #F7F8FA; transition: border 0.15s; font-family: inherit; }
+.search-input:focus { border-color: #4F46E5; }
+
+/* Content */
+.content { padding: 24px 32px; }
+.section-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.section-desc { font-size: 14px; color: #6B7280; margin-bottom: 20px; }
+
+/* Filters */
+.filters { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+.filter-label { font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 6px; }
+.filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid #E5E7EB; background: #fff; color: #6B7280; font-size: 13px; cursor: pointer; font-weight: 400; transition: all 0.15s; font-family: inherit; }
+.filter-btn.active { border-color: #4F46E5; background: #EEF2FF; color: #4F46E5; font-weight: 600; }
+.result-count { font-size: 13px; color: #6B7280; margin-bottom: 16px; }
+
+/* Card Grid */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.card { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 20px; display: flex; flex-direction: column; gap: 12px; transition: box-shadow 0.2s, transform 0.2s; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); transform: translateY(-1px); }
+.card-top { display: flex; justify-content: space-between; align-items: center; }
+.cat-badge { font-size: 12px; padding: 3px 10px; border-radius: 6px; font-weight: 500; }
+.diff-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.card .desc { font-size: 13px; color: #6B7280; line-height: 1.5; }
+.preview-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #4F46E5; font-size: 12px; cursor: pointer; padding: 0; font-weight: 500; font-family: inherit; }
+.preview-box { background: #F9FAFB; border-radius: 8px; padding: 12px; font-size: 12px; color: #6B7280; line-height: 1.6; white-space: pre-wrap; border-left: 3px solid #4F46E5; }
+.card-actions { display: flex; gap: 8px; margin-top: auto; }
+.copy-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 8px; border: 1px solid #E5E7EB; background: #fff; color: #1F2937; font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.15s; font-family: inherit; }
+.copy-btn.copied { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
+
+/* Guide Cards */
+.guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.guide-card { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.guide-top { display: flex; justify-content: space-between; align-items: center; }
+.guide-duration { font-size: 12px; color: #6B7280; }
+.step-list { display: flex; flex-direction: column; gap: 8px; }
+.step-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: #EEF2FF; color: #4F46E5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.guide-start-btn { margin-top: auto; padding: 9px 16px; border-radius: 8px; border: none; background: #4F46E5; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; transition: opacity 0.15s; }
+.guide-start-btn:hover { opacity: 0.9; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.modal { background: #fff; border-radius: 16px; max-width: 640px; width: 100%; max-height: 85vh; overflow: auto; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+.modal-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px; }
+.modal-badges { display: flex; gap: 8px; margin-bottom: 10px; }
+.modal h2 { font-size: 20px; font-weight: 700; }
+.modal-close { background: none; border: none; cursor: pointer; color: #6B7280; padding: 4px; font-size: 20px; }
+.modal .desc { font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 20px; }
+.modal-section-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.modal-prompt-box { background: #F9FAFB; border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; border: 1px solid #E5E7EB; margin-bottom: 20px; }
+.modal-example-box { background: #F0F4FF; border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; border-left: 3px solid #4F46E5; margin-bottom: 24px; }
+.modal-copy-btn { width: 100%; padding: 12px 16px; border-radius: 10px; border: none; background: #4F46E5; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; font-family: inherit; }
+.modal-copy-btn.copied { background: #E8F5E9; color: #2E7D32; }
+
+/* Empty State */
+.empty-state { text-align: center; padding: 60px 20px; color: #6B7280; }
+.empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+.empty-state p:first-of-type { font-size: 15px; margin-bottom: 4px; }
+.empty-state p:last-of-type { font-size: 13px; }
+
+/* Category Colors */
+.cat-마케팅 { background: #E3F2FD; }
+.cat-데이터분석 { background: #F3E5F5; }
+.cat-고객서비스 { background: #E0F2F1; }
+.cat-문서작성 { background: #FFF8E1; }
+.cat-전략기획 { background: #EDE7F6; }
+.cat-HR채용 { background: #FCE4EC; }
+
+/* Difficulty Colors */
+.diff-초급 { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+.diff-중급 { background: #FFF3E0; color: #E65100; border: 1px solid #FFCC80; }
+.diff-고급 { background: #FCE4EC; color: #C62828; border: 1px solid #EF9A9A; }
+
+/* Module Tabs */
+.module-tabs-wrap { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #E5E7EB; }
+.module-tabs-label { font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 10px; letter-spacing: 0.03em; }
+.module-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; -ms-overflow-style: none; scrollbar-width: none; }
+.module-tabs::-webkit-scrollbar { display: none; }
+.module-tab { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; border: 1.5px solid #E5E7EB; background: #fff; color: #6B7280; font-size: 13px; cursor: pointer; font-weight: 500; white-space: nowrap; transition: all 0.25s ease; font-family: inherit; }
+.module-tab:hover { border-color: #C7D2FE; background: #FAFAFE; color: #6366F1; }
+.module-tab.active { border-color: #4F46E5; background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); color: #4F46E5; font-weight: 600; box-shadow: 0 2px 10px rgba(79,70,229,0.12); }
+.module-tab .tab-icon { font-size: 16px; line-height: 1; }
+.module-tab .tab-count { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #F3F4F6; color: #9CA3AF; font-weight: 600; }
+.module-tab.active .tab-count { background: #4F46E5; color: #fff; }
+.module-desc { font-size: 13px; color: #6B7280; margin-top: 12px; padding: 10px 14px; background: #F9FAFB; border-radius: 8px; border-left: 3px solid #4F46E5; line-height: 1.5; }
+.module-desc:empty { display: none; }
+
+.hidden { display: none; }
+
+/* Guide Detail */
+.guide-back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #4F46E5; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 24px; transition: opacity 0.15s; }
+.guide-back-btn:hover { opacity: 0.7; }
+.guide-detail-header { margin-bottom: 28px; }
+.guide-detail-header h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.guide-detail-meta { display: flex; align-items: center; gap: 10px; }
+.guide-detail-desc { font-size: 15px; color: #4B5563; line-height: 1.7; margin-top: 12px; }
+.guide-steps-section { margin-top: 32px; }
+.guide-steps-section h3 { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 16px; letter-spacing: 0.01em; }
+.guide-step-card { display: flex; gap: 16px; padding: 18px 20px; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.guide-step-num-large { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.guide-step-body { flex: 1; }
+.guide-step-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.guide-step-tip { font-size: 13px; color: #6B7280; line-height: 1.55; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo" id="sidebar-logo">
+      <div class="logo-img-wrap">
+        <div class="logo-icon" id="logo-icon">AI</div>
+        <div>
+          <div class="logo-text-main" id="logo-text-main">프롬프트 허브</div>
+          <div class="logo-text-sub" id="logo-text-sub">AI 교육 플랫폼</div>
+        </div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-section="prompts" onclick="switchSection('prompts')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>프롬프트<br>라이브러리</span>
+        <span class="count" id="prompt-count">12</span>
+      </button>
+      <button class="nav-btn" data-section="guides" onclick="switchSection('guides')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>사용 가이드</span>
+        <span class="count">4</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">v1.0 · 샘플 데이터</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="header">
+      <div class="search-wrap">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="프롬프트 검색..." oninput="filterPrompts()">
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Prompts Section -->
+      <div id="section-prompts">
+        <h2 class="section-title">프롬프트 라이브러리</h2>
+        <p class="section-desc">교육과정 모듈별로 정리된 AI 프롬프트를 탐색하세요</p>
+
+        <div class="module-tabs-wrap">
+          <div class="module-tabs-label">📚 교육과정 모듈</div>
+          <div class="module-tabs" id="module-tabs"></div>
+          <div class="module-desc" id="module-desc"></div>
+        </div>
+
+        <div class="filters">
+          <div>
+            <div class="filter-label">카테고리</div>
+            <div class="filter-group" id="cat-filters"></div>
+          </div>
+          <div>
+            <div class="filter-label">난이도</div>
+            <div class="filter-group" id="diff-filters"></div>
+          </div>
+        </div>
+
+        <div class="result-count" id="result-count">12개의 프롬프트</div>
+        <div class="card-grid" id="card-grid"></div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>검색 결과가 없습니다</p>
+          <p>다른 키워드나 필터를 시도해 보세요</p>
+        </div>
+      </div>
+
+      <!-- Guides Section: 목록 -->
+      <div id="section-guides" class="hidden">
+        <h2 class="section-title">사용 가이드</h2>
+        <p class="section-desc">프롬프트 작성 실력을 높이는 단계별 학습 가이드</p>
+        <div class="guide-grid" id="guide-grid"></div>
+      </div>
+
+      <!-- Guides Section: 상세 뷰 -->
+      <div id="section-guide-detail" class="hidden">
+        <button class="guide-back-btn" onclick="closeGuideDetail()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          목록으로 돌아가기
+        </button>
+        <div id="guide-detail-content"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-badges" id="modal-badges"></div>
+        <h2 id="modal-title"></h2>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.add('hidden')">&times;</button>
+    </div>
+    <p class="desc" id="modal-desc"></p>
+    <div>
+      <div class="modal-section-label">프롬프트</div>
+      <div class="modal-prompt-box" id="modal-prompt"></div>
+    </div>
+    <div>
+      <div class="modal-section-label">예시 결과</div>
+      <div class="modal-example-box" id="modal-example"></div>
+    </div>
+    <button class="modal-copy-btn" id="modal-copy-btn" onclick="copyModalPrompt()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      프롬프트 복사하기
+    </button>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────
+let MODULES = [], CATEGORIES = [], DIFFICULTIES = [], PROMPTS = [], GUIDES = [];
+let selectedModule = "all";
+let selectedCategory = "전체";
+let selectedDifficulty = "전체";
+let expandedId = null;
+let currentModalPrompt = null;
+
+const catColorMap = { "마케팅":"cat-마케팅", "데이터 분석":"cat-데이터분석", "고객 서비스":"cat-고객서비스", "문서 작성":"cat-문서작성", "전략 기획":"cat-전략기획", "HR/채용":"cat-HR채용" };
+
+const icons = {
+  copy: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  eye: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
+  chevron: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+};
+
+// ── Load Data from prompt-data.js ────────────────────
+function loadData() {
+  if (typeof PROMPT_DATA === 'undefined') {
+    document.querySelector('.content').innerHTML = `
+      <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px">데이터를 불러올 수 없습니다</p>
+        <p>prompt-data.js 파일이 같은 폴더에 있는지 확인하세요.</p>
+      </div>`;
+    return;
+  }
+
+  const data = PROMPT_DATA;
+
+  // Apply config
+  const cfg = data.config || {};
+  if (cfg.logoUrl) {
+    const logoEl = document.getElementById('logo-icon');
+    logoEl.innerHTML = `<img src="${cfg.logoUrl}" alt="logo">`;
+    logoEl.style.background = 'transparent';
+    logoEl.style.borderRadius = '0';
+  }
+  if (cfg.logoText) document.getElementById('logo-text-main').textContent = cfg.logoText;
+  if (cfg.logoSubText) document.getElementById('logo-text-sub').textContent = cfg.logoSubText;
+  if (cfg.version) document.querySelector('.sidebar-footer').textContent = `${cfg.version}`;
+
+  MODULES = data.modules || [];
+  CATEGORIES = data.categories || [];
+  DIFFICULTIES = data.difficulties || [];
+  PROMPTS = data.prompts || [];
+  GUIDES = data.guides || [];
+
+  initApp();
+}
+
+function initApp() {
+  renderModuleTabs();
+  renderFilters();
+  renderCards(PROMPTS);
+  renderGuides();
+  document.getElementById('prompt-count').textContent = PROMPTS.length;
+}
+
+// ── Rendering ─────────────────────────────────────────
+function switchSection(section) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-section="${section}"]`).classList.add('active');
+  document.getElementById('section-prompts').classList.toggle('hidden', section !== 'prompts');
+  document.getElementById('section-guides').classList.toggle('hidden', section !== 'guides');
+  document.getElementById('section-guide-detail').classList.add('hidden');
+}
+
+function filterPrompts() {
+  const query = document.querySelector('.search-input').value.toLowerCase();
+  const filtered = PROMPTS.filter(p => {
+    const matchSearch = p.title.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+    const matchModule = selectedModule === "all" || p.module === selectedModule;
+    const matchCat = selectedCategory === "전체" || p.category === selectedCategory;
+    const matchDiff = selectedDifficulty === "전체" || p.difficulty === selectedDifficulty;
+    return matchSearch && matchModule && matchCat && matchDiff;
+  });
+  renderCards(filtered);
+}
+
+function selectCategory(cat) {
+  selectedCategory = cat;
+  document.querySelectorAll('#cat-filters .filter-btn').forEach(b => b.classList.toggle('active', b.textContent === cat));
+  filterPrompts();
+}
+
+function selectDifficulty(diff) {
+  selectedDifficulty = diff;
+  document.querySelectorAll('#diff-filters .filter-btn').forEach(b => b.classList.toggle('active', b.textContent === diff));
+  filterPrompts();
+}
+
+function renderCards(prompts) {
+  const grid = document.getElementById('card-grid');
+  const empty = document.getElementById('empty-state');
+  const count = document.getElementById('result-count');
+  count.textContent = `${prompts.length}개의 프롬프트`;
+  if (prompts.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  grid.innerHTML = prompts.map(p => {
+    const catClass = catColorMap[p.category] || '';
+    const isExpanded = expandedId === p.id;
+    return `
+      <div class="card" onclick="openModal(${p.id})">
+        <div class="card-top">
+          <span class="cat-badge ${catClass}">${p.category}</span>
+          <span class="diff-badge diff-${p.difficulty}">${p.difficulty}</span>
+        </div>
+        <div><h3>${p.title}</h3><p class="desc">${p.description}</p></div>
+        <button class="preview-btn" onclick="event.stopPropagation(); togglePreview(${p.id})">
+          ${isExpanded ? icons.eyeOff : icons.eye} ${isExpanded ? '미리보기 닫기' : '예시 결과 미리보기'}
+        </button>
+        ${isExpanded ? `<div class="preview-box">${escapeHtml(p.exampleResult)}</div>` : ''}
+        <div class="card-actions">
+          <button class="copy-btn" id="copy-btn-${p.id}" onclick="event.stopPropagation(); copyPrompt(${p.id})">${icons.copy} 프롬프트 복사</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderGuides() {
+  document.getElementById('guide-grid').innerHTML = GUIDES.map(g => `
+    <div class="guide-card">
+      <div class="guide-top">
+        <span class="diff-badge diff-${g.level}">${g.level}</span>
+        <span class="guide-duration">⏱ ${g.duration}</span>
+      </div>
+      <div>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:6px">${g.title}</h3>
+        <p style="font-size:13px;color:#6B7280;line-height:1.5">${g.description}</p>
+      </div>
+      <div class="step-list">
+        ${g.steps.map((s, i) => `<div class="step-item"><div class="step-num">${i + 1}</div><span>${s}</span></div>`).join('')}
+      </div>
+      <button class="guide-start-btn" onclick="openGuideDetail(${g.id})">학습 시작하기 ${icons.chevron}</button>
+    </div>
+  `).join('');
+}
+
+function renderFilters() {
+  document.getElementById('cat-filters').innerHTML = CATEGORIES.map(c =>
+    `<button class="filter-btn ${c === selectedCategory ? 'active' : ''}" onclick="selectCategory('${c}')">${c}</button>`
+  ).join('');
+  document.getElementById('diff-filters').innerHTML = DIFFICULTIES.map(d =>
+    `<button class="filter-btn ${d === selectedDifficulty ? 'active' : ''}" onclick="selectDifficulty('${d}')">${d}</button>`
+  ).join('');
+}
+
+function renderModuleTabs() {
+  const container = document.getElementById('module-tabs');
+  container.innerHTML = MODULES.map(m => {
+    const count = m.id === 'all' ? PROMPTS.length : PROMPTS.filter(p => p.module === m.id).length;
+    return `<button class="module-tab ${m.id === selectedModule ? 'active' : ''}" onclick="selectModule('${m.id}')">
+      <span class="tab-icon">${m.icon}</span><span>${m.label}</span><span class="tab-count">${count}</span>
+    </button>`;
+  }).join('');
+  const descEl = document.getElementById('module-desc');
+  const activeModule = MODULES.find(m => m.id === selectedModule);
+  descEl.textContent = activeModule && activeModule.desc ? activeModule.desc : '';
+}
+
+function selectModule(moduleId) { selectedModule = moduleId; renderModuleTabs(); filterPrompts(); }
+
+// ── Interactions ──────────────────────────────────────
+function togglePreview(id) { expandedId = expandedId === id ? null : id; filterPrompts(); }
+
+function copyPrompt(id) {
+  const p = PROMPTS.find(x => x.id === id);
+  navigator.clipboard.writeText(p.prompt).then(() => {
+    const btn = document.getElementById(`copy-btn-${id}`);
+    btn.classList.add('copied'); btn.innerHTML = `${icons.check} 복사됨!`;
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = `${icons.copy} 프롬프트 복사`; }, 2000);
+  });
+}
+
+function openModal(id) {
+  const p = PROMPTS.find(x => x.id === id);
+  currentModalPrompt = p;
+  const catClass = catColorMap[p.category] || '';
+  document.getElementById('modal-badges').innerHTML = `<span class="cat-badge ${catClass}">${p.category}</span><span class="diff-badge diff-${p.difficulty}">${p.difficulty}</span>`;
+  document.getElementById('modal-title').textContent = p.title;
+  document.getElementById('modal-desc').textContent = p.description;
+  document.getElementById('modal-prompt').textContent = p.prompt;
+  document.getElementById('modal-example').textContent = p.exampleResult;
+  const btn = document.getElementById('modal-copy-btn');
+  btn.classList.remove('copied');
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 프롬프트 복사하기';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal')) document.getElementById('modal').classList.add('hidden'); }
+
+// ── Guide Detail ──────────────────────────────────────
+function openGuideDetail(id) {
+  const g = GUIDES.find(x => x.id === id);
+  if (!g) return;
+
+  const dc = g.level === '초급'
+    ? { bg: '#E8F5E9', color: '#2E7D32', border: '#A5D6A7' }
+    : g.level === '중급'
+    ? { bg: '#FFF3E0', color: '#E65100', border: '#FFCC80' }
+    : { bg: '#FCE4EC', color: '#C62828', border: '#EF9A9A' };
+
+  // 각 step에 대한 보충 팁 (데모용)
+  const stepTips = [
+    '역할을 구체적으로 지정할수록 결과의 일관성이 높아집니다.',
+    '배경 정보, 목적, 대상 독자를 함께 제공하면 훨씬 적합한 답변을 얻을 수 있습니다.',
+    '표, 번호 목록, JSON 등 원하는 형식을 명시하세요.',
+    '좋은 예시 1개가 긴 설명보다 효과적입니다.'
+  ];
+
+  document.getElementById('guide-detail-content').innerHTML = `
+    <div class="guide-detail-header">
+      <div class="guide-detail-meta">
+        <span class="diff-badge diff-${g.level}">${g.level}</span>
+        <span style="font-size:13px;color:#6B7280">⏱ ${g.duration}</span>
+      </div>
+      <h2>${g.title}</h2>
+      <p class="guide-detail-desc">${g.description}</p>
+    </div>
+
+    <div class="guide-steps-section">
+      <h3>📋 학습 단계</h3>
+      ${g.steps.map((step, i) => `
+        <div class="guide-step-card">
+          <div class="guide-step-num-large">${i + 1}</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">${step}</div>
+            <div class="guide-step-tip">${stepTips[i] || ''}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  document.getElementById('section-guides').classList.add('hidden');
+  document.getElementById('section-guide-detail').classList.remove('hidden');
+}
+
+function closeGuideDetail() {
+  document.getElementById('section-guide-detail').classList.add('hidden');
+  document.getElementById('section-guides').classList.remove('hidden');
+}
+
+function copyModalPrompt() {
+  if (!currentModalPrompt) return;
+  navigator.clipboard.writeText(currentModalPrompt.prompt).then(() => {
+    const btn = document.getElementById('modal-copy-btn');
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 복사 완료!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 프롬프트 복사하기';
+    }, 2000);
+  });
+}
+
+function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+// ── Init ──────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

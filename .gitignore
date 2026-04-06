@@ -1,0 +1,4 @@
+*.txt
+prompt-data.json
+ai-prompt-hub.html
+.claude/
